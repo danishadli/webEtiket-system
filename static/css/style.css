@@ -1,0 +1,45 @@
+/* Additional custom styles if needed */
+.qr-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.qr-container img {
+    max-width: 200px;
+    height: auto;
+}
+
+.scanner-container {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.result-animation {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive styles */
+@media (max-width: 640px) {
+    .container {
+        padding: 1rem;
+    }
+    
+    .qr-container img {
+        max-width: 150px;
+    }
+}

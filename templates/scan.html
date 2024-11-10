@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan Tiket - E-Tiket OHU</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body class="bg-gray-100">
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex justify-between">
+                <div class="flex space-x-7">
+                    <div>
+                        <a href="/" class="flex items-center py-4 px-2">
+                            <span class="font-semibold text-gray-500 text-lg">E-Tiket OHU</span>
+                        </a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <a href="/" class="py-2 px-4 text-gray-500 hover:text-gray-700 transition duration-300">Home</a>
+                    <a href="/generate" class="py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-600 transition duration-300">Generate Tiket</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-lg mx-auto">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold mb-6 text-center text-gray-800">Scan Tiket</h2>
+                
+                <!-- QR Scanner -->
+                <div id="reader" class="mb-4"></div>
+                
+                <!-- Result Container -->
+                <div id="resultContainer" class="hidden">
+                    <div id="successResult" class="hidden p-4 mb-4 rounded-lg"></div>
+                    <div id="errorResult" class="hidden p-4 mb-4 bg-red-100 text-red-700 rounded-lg"></div>
+                </div>
+            </div>
+            
+            <!-- Scan History -->
+            <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-xl font-semibold mb-4">Riwayat Scan</h3>
+                <div id="scanHistory" class="space-y-2">
+                    <!-- History items will be added here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", 
+            { 
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            }
+        );
+
+        function onScanSuccess(decodedText, decodedResult) {
+            // Parse QR data
+            try {
+                const ticketData = decodedText;
+                verifyTicket(ticketData);
+            } catch (error) {
+                showError("Format QR code tidak valid");
+            }
+        }
+
+        async function verifyTicket(ticketData) {
+            try {
+                const response = await fetch('/api/verify-ticket', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ ticket_data: ticketData })
+                });
+
+                const result = await response.json();
+                const resultContainer = document.getElementById('resultContainer');
+                const successResult = document.getElementById('successResult');
+                const errorResult = document.getElementById('errorResult');
+
+                resultContainer.classList.remove('hidden');
+
+                if (result.status === 'success') {
+                    successResult.classList.remove('hidden');
+                    errorResult.classList.add('hidden');
+                    successResult.classList.add('bg-green-100', 'text-green-700');
+                    successResult.innerHTML = `
+                        <h4 class="font-semibold">Check-in Berhasil!</h4>
+                        <p>Nama: ${result.nama}</p>
+                        <p>Email: ${result.email}</p>
+                        <p>Waktu Check-in: ${result.check_in_time}</p>
+                    `;
+                    addToScanHistory(result);
+                } else {
+                    showError(result.message);
+                }
+            } catch (error) {
+                showError("Terjadi kesalahan saat memverifikasi tiket");
+            }
+        }
+
+        function showError(message) {
+            const resultContainer = document.getElementById('resultContainer');
+            const successResult = document.getElementById('successResult');
+            const errorResult = document.getElementById('errorResult');
+
+            resultContainer.classList.remove('hidden');
+            successResult.classList.add('hidden');
+            errorResult.classList.remove('hidden');
+            errorResult.innerHTML = `<p class="font-semibold">${message}</p>`;
+        }
+
+        function addToScanHistory(result) {
+            const scanHistory = document.getElementById('scanHistory');
+            const historyItem = document.createElement('div');
+            historyItem.classList.add('p-3', 'bg-gray-50', 'rounded-lg');
+            historyItem.innerHTML = `
+                <p class="font-semibold">${result.nama}</p>
+                <p class="text-sm text-gray-600">${result.check_in_time}</p>
+            `;
+            scanHistory.insertBefore(historyItem, scanHistory.firstChild);
+        }
+
+        html5QrcodeScanner.render(onScanSuccess);
+    </script>
+</body>
+</html>
